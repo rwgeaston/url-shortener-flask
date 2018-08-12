@@ -35,3 +35,39 @@ class URLShortenerTests(TestCase):
             "https://rwgeaston.com",
             response.data.decode('utf8'),
         )
+
+    def test_rest_endpoints(self):
+        random.seed(2)
+        random_id = '9382dffx'
+
+        response = self.app.post('/shorten_url', data={'url': 'https://rwgeaston.com'})
+        expected_response = {
+            'url': 'https://rwgeaston.com',
+            'id': random_id,
+            'shortened_url': f'http://localhost/r/{random_id}',
+            'relative_shortened_url': f'r/{random_id}',
+        }
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json(), expected_response)
+
+        response = self.app.get(f'/short_url/{random_id}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), expected_response)
+
+        expected_response['url'] = 'https://rwgeaston.com/admin/'
+
+        response = self.app.patch(f'/short_url/{random_id}', data={
+            'url': 'https://rwgeaston.com/admin/',
+
+            # Note we did NOT change this in expected response
+            'shortened_url': 'complete nonsense, thankfully will be ignored',
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json(), expected_response)
+
+        response = self.app.delete(f'/short_url/{random_id}')
+        self.assertEqual(response.status_code, 204)
+
+        response = self.app.get(f'/short_url/{random_id}')
+        self.assertEqual(response.status_code, 404)

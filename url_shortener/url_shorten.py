@@ -34,6 +34,13 @@ class URLShortenRequestParser(RequestParser):
 parser = URLShortenRequestParser()
 
 
+def add_shortened_urls(response, flask_request, url_id):
+    response.update({
+        'shortened_url': generate_redirect_url(flask_request.url_root, url_id),
+        'relative_shortened_url': generate_redirect_url('', url_id),
+    })
+
+
 class URLShortenPost(Resource):
     valid_character_set = ascii_letters + digits
 
@@ -54,10 +61,8 @@ class URLShortenPost(Resource):
         args['id'] = url_id
         shortened_urls[url_id] = args
 
-        response = {
-            'shortened_url': generate_redirect_url(request.url_root, url_id),
-            'relative_shortened_url': generate_redirect_url('', url_id),
-        }
+        response = {}
+        add_shortened_urls(response, request, url_id)
         response.update(args)
         return response, 201
 
@@ -71,16 +76,23 @@ class URLShorten(Resource):
         return shortened_urls[url_id]
 
     def get(self, url_id):
-        return self.get_entity(url_id)
+        response = {}
+        response.update(self.get_entity(url_id))
+        add_shortened_urls(response, request, url_id)
+        return response
 
     def put(self, url_id):
         return self.patch(url_id)
 
     def patch(self, url_id):
-        shortened_url = self.get_entity(url_id)
+        entity = self.get_entity(url_id)
         args = parser.parse_args()
-        shortened_url.update(args)
-        return shortened_urls
+        entity.update(args)
+
+        response = {}
+        add_shortened_urls(response, request, url_id)
+        response.update(entity)
+        return response, 201
 
     def delete(self, url_id):
         if self.get_entity(url_id):
