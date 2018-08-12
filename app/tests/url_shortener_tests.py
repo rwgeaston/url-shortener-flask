@@ -1,7 +1,7 @@
 import random
 from unittest import TestCase
 
-from url_shortener.app import app
+from app.url_shortener.app import app
 
 
 class URLShortenerTests(TestCase):

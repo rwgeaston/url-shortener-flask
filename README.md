@@ -1,7 +1,9 @@
 
-To run locally, pip install -r requirements on a python3.6 virtualenv, and then use python run.py to run a development version.
+To run, use docker-compose up. Might need to change the port in the docker-compose if you're already using 80.
 
-You can also use ./test.sh to check pylint and unit tests are working. Note that running this the first time will add itself to the git pre-commit hooks, so that one does not forget to run the unit tests before committing :)
+You can use ./test.sh to check pylint and unit tests are working, but need python3.6 and pip install requirements first. So best to use a virtualenv. 
+
+Note that running test.sh the first time will add itself to the git pre-commit hooks, so that one does not forget to run the unit tests before committing :)
 
 POST to /shorten_url with {"URL": "some valid URL"} to create a short URL to this. Response will include:
 

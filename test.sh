@@ -1,7 +1,7 @@
 #!/bin/bash
 ln -sf "$PWD/test.sh" .git/hooks/pre-commit
 
-pylint url_shortener
+pylint app/url_shortener
 rc=$?;
 if [[ $rc != 0 ]];
 then
