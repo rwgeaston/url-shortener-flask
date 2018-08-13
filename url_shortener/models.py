@@ -16,7 +16,7 @@ class ShortURL(db.Model):
 
     def serialise(self, url_root):
         return {
-            'id': self.slug,
+            'slug': self.slug,
             'url': self.original_url,
             'shortened_url': self.generate_redirect_url(url_root),
             'relative_shortened_url': self.generate_redirect_url(''),
