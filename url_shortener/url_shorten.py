@@ -10,8 +10,7 @@ from flask_restful.reqparse import RequestParser
 import validators
 
 from .app import api
-from .redirect import generate_redirect_url
-from .fake_database import shortened_urls
+from .models import ShortURL
 
 
 class URLShortenRequestParser(RequestParser):
@@ -34,17 +33,10 @@ class URLShortenRequestParser(RequestParser):
 parser = URLShortenRequestParser()
 
 
-def add_shortened_urls(response, flask_request, url_id):
-    response.update({
-        'shortened_url': generate_redirect_url(flask_request.url_root, url_id),
-        'relative_shortened_url': generate_redirect_url('', url_id),
-    })
-
-
 class URLShortenPost(Resource):
     valid_character_set = ascii_letters + digits
 
-    def generate_short_url(self):
+    def generate_slug(self):
         return ''.join([choice(self.valid_character_set) for _ in range(8)])
 
     def post(self):
@@ -52,54 +44,46 @@ class URLShortenPost(Resource):
         if not args['url']:
             abort(400, message='Must provide a URL to redirect to when POSTing.')
 
-        url_id = ''
-        while not url_id or url_id in shortened_urls:
+        slug = ''
+        while not slug or ShortURL.query.filter_by(slug=slug).count():
             # Generate random things until we get an unused one
             # Probably first attempt
-            url_id = self.generate_short_url()
+            slug = self.generate_slug()
 
-        args['id'] = url_id
-        shortened_urls[url_id] = args
+        new_entity = ShortURL(
+            slug=slug,
+            original_url=args['url']
+        )
 
-        response = {}
-        add_shortened_urls(response, request, url_id)
-        response.update(args)
-        return response, 201
+        new_entity.save()
+        return new_entity.serialise(request.url_root), 201
 
 
 class URLShorten(Resource):
     @staticmethod
-    def get_entity(url_id):
-        if url_id not in shortened_urls:
-            abort(404, message="Shortened URL {} doesn't exist".format(url_id))
+    def get(slug):
+        return ShortURL.get_by_slug(slug).serialise(request.url_root)
 
-        return shortened_urls[url_id]
+    def put(self, slug):
+        return self.patch(slug)
 
-    def get(self, url_id):
-        response = {}
-        response.update(self.get_entity(url_id))
-        add_shortened_urls(response, request, url_id)
-        return response
-
-    def put(self, url_id):
-        return self.patch(url_id)
-
-    def patch(self, url_id):
-        entity = self.get_entity(url_id)
+    @staticmethod
+    def patch(slug):
+        entity = ShortURL.get_by_slug(slug)
         args = parser.parse_args()
-        entity.update(args)
+        if 'url' in args:
+            # This is ok because there's only one field to set but there must be a nicer way.
+            entity.original_url = args['url']
 
-        response = {}
-        add_shortened_urls(response, request, url_id)
-        response.update(entity)
-        return response, 201
+        entity.save()
+        return entity.serialise(request.url_root), 201
 
-    def delete(self, url_id):
-        if self.get_entity(url_id):
-            shortened_urls.pop(url_id)
-
-        return url_id, 204
+    @staticmethod
+    def delete(slug):
+        entity = ShortURL.get_by_slug(slug)
+        entity.delete()
+        return slug, 204
 
 
-api.add_resource(URLShorten, '/short_url/<url_id>')
+api.add_resource(URLShorten, '/short_url/<slug>')
 api.add_resource(URLShortenPost, '/shorten_url')
