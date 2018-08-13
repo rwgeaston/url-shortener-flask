@@ -1,7 +1,7 @@
 
 To run locally, you need recent versions of docker and docker-compose. Run docker-compose up from root folder.
 
-You can also use ./test.sh to check pylint and unit tests are working. Note that running this the first time will add itself to the git pre-commit hooks, so that one does not forget to run the unit tests before committing :)
+You can also use ./test.sh to check pylint and unit tests are working. Note that running this the first time will add itself to the git pre-commit hooks, so that one does not forget to run the unit tests before committing :) You need a python3.6 virtualenv + pip install -r local_requirements.txt for this.
 
 POST to /shorten_url with {"URL": "some valid URL"} to create a short URL to this. Response will include:
 
