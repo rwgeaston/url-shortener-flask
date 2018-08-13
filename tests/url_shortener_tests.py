@@ -1,12 +1,22 @@
 import random
-from unittest import TestCase
+from flask_testing import TestCase
 
 from url_shortener.app import app
+from url_shortener.app import db
 
 
 class URLShortenerTests(TestCase):
     def setUp(self):
-        self.app = app.test_client()
+        db.create_all()
+        db.session.commit()
+
+    def create_app(self):
+        app.config.from_object('url_shortener.config.TestingConfig')
+        return app
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
 
     def test_post_url_check_redirect(self):
         # This should make random.choice within the app predictable
@@ -15,7 +25,7 @@ class URLShortenerTests(TestCase):
         random.seed(1)
         random_id = 'iK2ZWeqh'  # This won't change if seed doesn't
 
-        response = self.app.post('/shorten_url', data={'url': 'https://rwgeaston.com'})
+        response = self.client.post('/shorten_url', data={'url': 'https://rwgeaston.com'})
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
@@ -28,7 +38,7 @@ class URLShortenerTests(TestCase):
             }
         )
 
-        response = self.app.get(f'/r/{random_id}')
+        response = self.client.get(f'/r/{random_id}')
 
         self.assertEqual(response.status_code, 301)
         self.assertIn(
@@ -40,7 +50,7 @@ class URLShortenerTests(TestCase):
         random.seed(2)
         random_id = '9382dffx'
 
-        response = self.app.post('/shorten_url', data={'url': 'https://rwgeaston.com'})
+        response = self.client.post('/shorten_url', data={'url': 'https://rwgeaston.com'})
         expected_response = {
             'url': 'https://rwgeaston.com',
             'id': random_id,
@@ -51,13 +61,13 @@ class URLShortenerTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.get_json(), expected_response)
 
-        response = self.app.get(f'/short_url/{random_id}')
+        response = self.client.get(f'/short_url/{random_id}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), expected_response)
 
         expected_response['url'] = 'https://rwgeaston.com/admin/'
 
-        response = self.app.patch(f'/short_url/{random_id}', data={
+        response = self.client.patch(f'/short_url/{random_id}', data={
             'url': 'https://rwgeaston.com/admin/',
 
             # Note we did NOT change this in expected response
@@ -66,8 +76,8 @@ class URLShortenerTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.get_json(), expected_response)
 
-        response = self.app.delete(f'/short_url/{random_id}')
+        response = self.client.delete(f'/short_url/{random_id}')
         self.assertEqual(response.status_code, 204)
 
-        response = self.app.get(f'/short_url/{random_id}')
+        response = self.client.get(f'/short_url/{random_id}')
         self.assertEqual(response.status_code, 404)

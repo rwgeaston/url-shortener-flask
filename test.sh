@@ -9,7 +9,7 @@ then
     exit $rc;
 fi
 
-python -m unittest discover -p "*_tests.py"
+docker-compose run web python manage.py test
 rc=$?;
 if [[ $rc != 0 ]];
 then
