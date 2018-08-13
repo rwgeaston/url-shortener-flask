@@ -1,0 +1,29 @@
+version: '3.6'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - '.:/app'
+    ports:
+      - 5000:5000
+    environment:
+      - FLASK_APP=url_shortener/app.py
+      - FLASK_ENV=development
+      - APP_SETTINGS=url_shortener.config.DevelopmentConfig
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/url_shortener_dev
+      - DATABASE_TEST_URL=postgres://postgres:postgres@db:5432/url_shortener_test
+    depends_on:
+      - db
+
+  db:
+    build:
+      context: ./url_shortener/db
+      dockerfile: Dockerfile
+    ports:
+      - 5435:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
