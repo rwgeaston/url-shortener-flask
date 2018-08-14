@@ -81,3 +81,29 @@ class URLShortenerTests(TestCase):
 
         response = self.client.get(f'/short_url/{slug}')
         self.assertEqual(response.status_code, 404)
+
+    def test_bad_luck_same_slug_twice(self):
+        random.seed(3)
+        slug = 'pLIix6ME'  # This won't change if seed doesn't
+
+        response = self.client.post('/shorten_url', data={'url': 'https://rwgeaston.com'})
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.get_json(),
+            {
+                'url': 'https://rwgeaston.com',
+                'slug': slug,
+                'shortened_url': f'http://localhost/r/{slug}',
+                'relative_shortened_url': f'r/{slug}',
+            }
+        )
+
+        random.seed(3)  # oops will get same slug again
+
+        response = self.client.post('/shorten_url', data={'url': 'https://rwgeaston.com'})
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.get_json()['slug'],
+            'OLeMa61E',  # it failed so POST endpoint tried a different one
+        )

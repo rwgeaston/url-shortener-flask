@@ -6,10 +6,12 @@ from flask import request
 from flask_restful import Resource
 from flask_restful import abort
 from flask_restful.reqparse import RequestParser
+from sqlalchemy.exc import IntegrityError
 
 import validators
 
 from .app import api
+from .app import db
 from .models import ShortURL
 
 
@@ -44,18 +46,24 @@ class URLShortenPost(Resource):
         if not args['url']:
             abort(400, message='Must provide a URL to redirect to when POSTing.')
 
-        slug = ''
-        while not slug or ShortURL.query.filter_by(slug=slug).count():
-            # Generate random things until we get an unused one
-            # Probably first attempt
-            slug = self.generate_slug()
-
         new_entity = ShortURL(
-            slug=slug,
+            slug='',
             original_url=args['url']
         )
 
-        new_entity.save()
+        while True:
+            # Generate random things until we get an unused one
+            # Probably first attempt
+            slug = self.generate_slug()
+            new_entity.slug = slug
+            try:
+                new_entity.save()
+            except IntegrityError:
+                # Need to keep trying until we don't get one
+                db.session.rollback()
+            else:
+                break
+
         return new_entity.serialise(request.url_root), 201
 
 

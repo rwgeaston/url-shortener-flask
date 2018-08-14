@@ -7,7 +7,7 @@ class ShortURL(db.Model):
     __tablename__ = 'shorturls'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    slug = db.Column(db.String(10), nullable=False, index=True)
+    slug = db.Column(db.String(10), nullable=False, index=True, unique=True)
     original_url = db.Column(db.String(255), nullable=False)
 
     def __init__(self, slug, original_url):
